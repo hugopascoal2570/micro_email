@@ -1,0 +1,53 @@
+version: "3.7"
+
+services:
+    # image project
+    micro_mail:
+        container_name: micro_mail
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: especializati/laravel9-app
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - redis_micro_email
+            - queue_micro_mail
+        networks:
+            - microemail
+
+    # nginx
+    nginx:
+        container_name: micro_mail_nginx
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "8007:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+        networks:
+            - microemail
+
+    # queue
+    queue_micro_mail:
+        container_name: micro_mail_queue
+        image: especializati/laravel9-app
+        restart: unless-stopped
+        command: "php artisan queue:work"
+        volumes:
+            - ./:/var/www
+        networks:
+            - microemail
+
+    # redis
+    redis_micro_email:
+        image: redis:latest
+        networks:
+            - microemail
+
+networks:
+    microemail:
+        driver: bridge
